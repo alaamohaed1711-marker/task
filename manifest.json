@@ -1,0 +1,22 @@
+{
+  "name": "قائمة مهامي - Todo List",
+  "short_name": "مهامي",
+  "description": "تطبيق قائمة مهام بسيط يعمل بدون انترنت - Simple offline todo app",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f0f8ff",
+  "theme_color": "#0099ff",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["productivity", "utilities", "lifestyle"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
