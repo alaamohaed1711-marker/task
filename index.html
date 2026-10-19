@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <!-- PWA Meta Tags - مهم جداً للتثبيت من Chrome -->
+    <title>قائمة مهامي</title>
+    <meta name="description" content="تطبيق قائمة مهام بسيط - يعمل بدون انترنت">
+    <meta name="theme-color" content="#0099ff">
+    <meta name="application-name" content="قائمة مهامي">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="مهامي">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+            background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .dad {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 120px;
+            padding-top: 20px;
+        }
+
+        .dad h2 {
+            margin: 0;
+            font-size: 28px;
+            color: #333;
+            text-align: center;
+        }
+
+        .dad2 {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            gap: 10px;
+            padding: 0 16px;
+            flex-wrap: wrap;
+        }
+
+        .input {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+            border: 2px solid rgb(0, 153, 255);
+            color: crimson;
+            font-family: inherit;
+            font-size: 18px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: rgb(0, 89, 255);
+            box-shadow: 0 0 0 3px rgba(0, 153, 255, 0.2);
+        }
+
+        .button {
+            border: 2px solid rgb(0, 153, 255);
+            background: rgb(0, 153, 255);
+            color: white;
+            font-family: inherit;
+            font-size: 18px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .button:hover {
+            background: rgb(0, 89, 255);
+            border-color: rgb(0, 89, 255);
+            transform: translateY(-1px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .stats {
+            max-width: 600px;
+            margin: 20px auto 0;
+            padding: 0 16px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 10px 18px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            min-width: 90px;
+        }
+
+        .stat-box .num {
+            font-size: 22px;
+            font-weight: bold;
+            color: rgb(0, 153, 255);
+            display: block;
+        }
+
+        .stat-box .label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .list-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 16px 100px;
+        }
+
+        .task {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .task:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-text {
+            cursor: pointer;
+            flex: 1;
+            font-size: 17px;
+            color: #333;
+            word-break: break-word;
+            user-select: none;
+        }
+
+        .completed {
+            text-decoration: line-through;
+            color: rgb(0, 110, 255);
+            opacity: 0.6;
+        }
+
+        .delete-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            margin-right: 10px;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #cc0000;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* زر تثبيت التطبيق */
+        #installBtn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgb(0, 153, 255);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 153, 255, 0.4);
+            z-index: 1000;
+            transition: all 0.2s;
+            padding-bottom: calc(14px + env(safe-area-inset-bottom));
+        }
+
+        #installBtn:hover {
+            background: rgb(0, 89, 255);
+            transform: translateX(-50%) translateY(-2px);
+        }
+
+        /* أزرار التصفية */
+        .filters {
+            max-width: 600px;
+            margin: 16px auto 0;
+            padding: 0 16px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: rgb(0, 153, 255);
+            color: white;
+            border-color: rgb(0, 153, 255);
+        }
+    </style>
+</head>
+<body>
+    <div class="dad">
+        <h2>📋 قائمة مهامي</h2>
+    </div>
+
+    <div class="dad2">
+        <input class="input" type="text" id="myInput" placeholder="اكتب مهمة..." onkeypress="if(event.key==='Enter') addTask()">
+        <button class="button" onclick="addTask()">➕ أضف</button>
+    </div>
+
+    <!-- إحصائيات -->
+    <div class="stats">
+        <div class="stat-box">
+            <span class="num" id="totalCount">0</span>
+            <span class="label">الإجمالي</span>
+        </div>
+        <div class="stat-box">
+            <span class="num" id="activeCount">0</span>
+            <span class="label">نشطة</span>
+        </div>
+        <div class="stat-box">
+            <span class="num" id="doneCount">0</span>
+            <span class="label">مكتملة</span>
+        </div>
+    </div>
+
+    <!-- أزرار التصفية -->
+    <div class="filters">
+        <button class="filter-btn active" onclick="setFilter('all', this)">الكل</button>
+        <button class="filter-btn" onclick="setFilter('active', this)">نشطة</button>
+        <button class="filter-btn" onclick="setFilter('done', this)">مكتملة</button>
+        <button class="filter-btn" onclick="clearAll()" style="border-color: #ff4444; color: #ff4444;">🗑️ حذف الكل</button>
+    </div>
+
+    <!-- قائمة المهام -->
+    <div class="list-container">
+        <div id="myList"></div>
+    </div>
+
+    <!-- زر تثبيت التطبيق -->
+    <button id="installBtn">📱 تثبيت التطبيق</button>
+
+    <script>
+        // ====== البيانات ======
+        let tasks = [];
+        let currentFilter = 'all';
+
+        // ===== تحميل المهام عند فتح التطبيق =====
+        window.onload = function() {
+            let saved = localStorage.getItem("myTasks");
+            if (saved) {
+                try {
+                    tasks = JSON.parse(saved);
+                } catch (e) {
+                    tasks = [];
+                }
+            }
+            displayTasks();
+            updateStats();
+        };
+
+        // ===== إضافة مهمة جديدة =====
+        function addTask() {
+            let input = document.getElementById("myInput");
+            let text = input.value.trim();
+            if (text === "") return;
+
+            tasks.push({
+                text: text,
+                completed: false,
+                createdAt: Date.now()
+            });
+            saveTasks();
+            displayTasks();
+            updateStats();
+            input.value = "";
+        }
+
+        // ===== عرض المهام =====
+        function displayTasks() {
+            let list = document.getElementById("myList");
+            list.innerHTML = "";
+
+            let filtered = tasks.filter(function(task) {
+                if (currentFilter === 'active') return !task.completed;
+                if (currentFilter === 'done') return task.completed;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                let empty = document.createElement("div");
+                empty.className = "empty-state";
+                empty.innerHTML = `
+                    <div class="icon">📝</div>
+                    <div>${currentFilter === 'done' ? 'مفيش مهام مكتملة لسه' : currentFilter === 'active' ? 'مفيش مهام نشطة 🎉' : 'مفيش مهام لسه. اكتب أول مهمة!'}</div>
+                `;
+                list.appendChild(empty);
+                return;
+            }
+
+            tasks.forEach(function(task, index) {
+                if (currentFilter === 'active' && task.completed) return;
+                if (currentFilter === 'done' && !task.completed) return;
+
+                let taskDiv = document.createElement("div");
+                taskDiv.className = "task";
+
+                let taskText = document.createElement("span");
+                taskText.innerText = task.text;
+                taskText.className = "task-text";
+                if (task.completed) {
+                    taskText.classList.add("completed");
+                }
+
+                taskText.onclick = function() {
+                    tasks[index].completed = !tasks[index].completed;
+                    saveTasks();
+                    displayTasks();
+                    updateStats();
+                };
+
+                let deleteBtn = document.createElement("button");
+                deleteBtn.innerText = "🗑️ حذف";
+                deleteBtn.className = "delete-btn";
+                deleteBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    if (confirm('متأكد إنك عاوز تحذف المهمة دي؟')) {
+                        tasks.splice(index, 1);
+                        saveTasks();
+                        displayTasks();
+                        updateStats();
+                    }
+                };
+
+                taskDiv.appendChild(taskText);
+                taskDiv.appendChild(deleteBtn);
+                list.appendChild(taskDiv);
+            });
+        }
+
+        // ===== حفظ المهام في المتصفح =====
+        function saveTasks() {
+            localStorage.setItem("myTasks", JSON.stringify(tasks));
+        }
+
+        // ===== تحديث الإحصائيات =====
+        function updateStats() {
+            let total = tasks.length;
+            let done = tasks.filter(t => t.completed).length;
+            let active = total - done;
+            document.getElementById("totalCount").innerText = total;
+            document.getElementById("activeCount").innerText = active;
+            document.getElementById("doneCount").innerText = done;
+        }
+
+        // ===== تغيير الفلتر =====
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            displayTasks();
+        }
+
+        // ===== حذف الكل =====
+        function clearAll() {
+            if (tasks.length === 0) {
+                alert('مفيش مهام للحذف');
+                return;
+            }
+            if (confirm('متأكد إنك عاوز تحذف كل المهام؟')) {
+                tasks = [];
+                saveTasks();
+                displayTasks();
+                updateStats();
+            }
+        }
+
+        // ==========================================
+        // PWA: تثبيت التطبيق (Install Prompt)
+        // ==========================================
+        let deferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').style.display = 'block';
+        });
+
+        document.getElementById('installBtn').addEventListener('click', async function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('تم التثبيت');
+                }
+                deferredPrompt = null;
+                document.getElementById('installBtn').style.display = 'none';
+            } else {
+                alert('للتثبيت على iPhone: اضغط زر المشاركة (Share) في Safari، وبعدين اختر "Add to Home Screen"');
+            }
+        });
+
+        window.addEventListener('appinstalled', function() {
+            document.getElementById('installBtn').style.display = 'none';
+        });
+
+        // ==========================================
+        // PWA: تسجيل Service Worker (للعمل بدون نت)
+        // ==========================================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js')
+                    .then(function(registration) {
+                        console.log('✅ Service Worker مسجل بنجاح');
+                    })
+                    .catch(function(err) {
+                        console.log('❌ فشل تسجيل Service Worker:', err);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
