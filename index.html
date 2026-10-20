@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-    <!-- PWA Meta Tags - مهم جداً للتثبيت من Chrome -->
+    <!-- PWA Meta Tags -->
     <title>قائمة مهامي</title>
     <meta name="description" content="تطبيق قائمة مهام بسيط - يعمل بدون انترنت">
     <meta name="theme-color" content="#0099ff">
@@ -17,8 +17,10 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
 
+    <!-- Icons -->
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="apple-touch-icon" href="icon.svg">
+
     <style>
         * {
             box-sizing: border-box;
@@ -264,6 +266,96 @@
             color: white;
             border-color: rgb(0, 153, 255);
         }
+
+        /* ===== إضافات جديدة (بنفس الاستايل) ===== */
+
+        /* خانة المهام المتكررة */
+        .repeat-section {
+            max-width: 600px;
+            margin: 12px auto 0;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .repeat-section input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: rgb(0, 153, 255);
+        }
+
+        .repeat-section label {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* شارة "متكررة" */
+        .repeat-badge {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffe08a;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+
+        /* زر التنبيهات */
+        #notifBtn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        #notifBtn.active {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        /* عدّاد إعادة التعيين */
+        .reset-countdown {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        /* قسم المهام المتكررة */
+        .section-title {
+            max-width: 600px;
+            margin: 24px auto 8px;
+            padding: 0 16px;
+            font-size: 16px;
+            color: #333;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title .badge {
+            background: #fff3cd;
+            color: #856404;
+            font-size: 12px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            border: 1px solid #ffe08a;
+        }
     </style>
 </head>
 <body>
@@ -274,6 +366,14 @@
     <div class="dad2">
         <input class="input" type="text" id="myInput" placeholder="اكتب مهمة..." onkeypress="if(event.key==='Enter') addTask()">
         <button class="button" onclick="addTask()">➕ أضف</button>
+    </div>
+
+    <!-- خانة المهام المتكررة -->
+    <div class="repeat-section">
+        <label>
+            <input type="checkbox" id="repeatCheckbox">
+            🔁 مهمة يومية (تتعاد كل 24 ساعة)
+        </label>
     </div>
 
     <!-- إحصائيات -->
@@ -297,6 +397,8 @@
         <button class="filter-btn active" onclick="setFilter('all', this)">الكل</button>
         <button class="filter-btn" onclick="setFilter('active', this)">نشطة</button>
         <button class="filter-btn" onclick="setFilter('done', this)">مكتملة</button>
+        <button class="filter-btn" onclick="setFilter('repeating', this)">🔁 المتكررة</button>
+        <button id="notifBtn" onclick="toggleNotifications()">🔔 التنبيهات</button>
         <button class="filter-btn" onclick="clearAll()" style="border-color: #ff4444; color: #ff4444;">🗑️ حذف الكل</button>
     </div>
 
@@ -312,6 +414,7 @@
         // ====== البيانات ======
         let tasks = [];
         let currentFilter = 'all';
+        let notificationsEnabled = false;
 
         // ===== تحميل المهام عند فتح التطبيق =====
         window.onload = function() {
@@ -323,8 +426,19 @@
                     tasks = [];
                 }
             }
+            // التحقق من المهام المتكررة اللي لازم تتعاد
+            checkRepeatingTasks();
             displayTasks();
             updateStats();
+
+            // فحص كل دقيقة للمهام المتكررة
+            setInterval(checkRepeatingTasks, 60000);
+
+            // استرجاع حالة التنبيهات
+            if (localStorage.getItem("notificationsEnabled") === "true") {
+                notificationsEnabled = true;
+                updateNotifButton();
+            }
         };
 
         // ===== إضافة مهمة جديدة =====
@@ -333,15 +447,50 @@
             let text = input.value.trim();
             if (text === "") return;
 
+            let isRepeating = document.getElementById("repeatCheckbox").checked;
+
             tasks.push({
                 text: text,
                 completed: false,
-                createdAt: Date.now()
+                createdAt: Date.now(),
+                repeating: isRepeating,
+                lastReset: isRepeating ? Date.now() : null
             });
             saveTasks();
             displayTasks();
             updateStats();
             input.value = "";
+            document.getElementById("repeatCheckbox").checked = false;
+        }
+
+        // ===== التحقق من المهام المتكررة وإعادة تعيينها =====
+        function checkRepeatingTasks() {
+            let now = Date.now();
+            let reset = [];
+            let needUpdate = false;
+
+            tasks.forEach(function(task, index) {
+                if (task.repeating && task.completed && task.lastReset) {
+                    // 24 ساعة = 24 * 60 * 60 * 1000 مللي ثانية
+                    let hoursPassed = (now - task.lastReset) / (1000 * 60 * 60);
+                    if (hoursPassed >= 24) {
+                        tasks[index].completed = false;
+                        tasks[index].lastReset = now;
+                        needUpdate = true;
+                        reset.push(task.text);
+                    }
+                }
+            });
+
+            if (needUpdate) {
+                saveTasks();
+                displayTasks();
+                updateStats();
+                // إرسال تنبيه لكل مهمة اتعادت
+                reset.forEach(function(taskText) {
+                    showNotification('🔁 مهمة متكررة', 'حان وقت: ' + taskText);
+                });
+            }
         }
 
         // ===== عرض المهام =====
@@ -352,16 +501,18 @@
             let filtered = tasks.filter(function(task) {
                 if (currentFilter === 'active') return !task.completed;
                 if (currentFilter === 'done') return task.completed;
+                if (currentFilter === 'repeating') return task.repeating;
                 return true;
             });
 
             if (filtered.length === 0) {
                 let empty = document.createElement("div");
                 empty.className = "empty-state";
-                empty.innerHTML = `
-                    <div class="icon">📝</div>
-                    <div>${currentFilter === 'done' ? 'مفيش مهام مكتملة لسه' : currentFilter === 'active' ? 'مفيش مهام نشطة 🎉' : 'مفيش مهام لسه. اكتب أول مهمة!'}</div>
-                `;
+                let msg = 'مفيش مهام لسه. اكتب أول مهمة!';
+                if (currentFilter === 'done') msg = 'مفيش مهام مكتملة لسه';
+                else if (currentFilter === 'active') msg = 'مفيش مهام نشطة 🎉';
+                else if (currentFilter === 'repeating') msg = 'مفيش مهام متكررة لسه';
+                empty.innerHTML = '<div class="icon">📝</div><div>' + msg + '</div>';
                 list.appendChild(empty);
                 return;
             }
@@ -369,19 +520,53 @@
             tasks.forEach(function(task, index) {
                 if (currentFilter === 'active' && task.completed) return;
                 if (currentFilter === 'done' && !task.completed) return;
+                if (currentFilter === 'repeating' && !task.repeating) return;
 
                 let taskDiv = document.createElement("div");
                 taskDiv.className = "task";
 
-                let taskText = document.createElement("span");
+                let leftSide = document.createElement("div");
+                leftSide.style.flex = "1";
+
+                let taskText = document.createElement("div");
                 taskText.innerText = task.text;
                 taskText.className = "task-text";
                 if (task.completed) {
                     taskText.classList.add("completed");
                 }
 
+                // لو المهمة متكررة، نضيف شارة وعدّاد
+                if (task.repeating) {
+                    let badge = document.createElement("span");
+                    badge.className = "repeat-badge";
+                    badge.innerText = "🔁 يومية";
+
+                    let countdown = document.createElement("div");
+                    countdown.className = "reset-countdown";
+
+                    if (task.completed && task.lastReset) {
+                        let hoursLeft = 24 - Math.floor((Date.now() - task.lastReset) / (1000 * 60 * 60));
+                        let minsLeft = 60 - Math.floor(((Date.now() - task.lastReset) / (1000 * 60)) % 60);
+                        if (hoursLeft <= 0) {
+                            countdown.innerText = "هتعاد قريب...";
+                        } else {
+                            countdown.innerText = "تتعاد بعد " + hoursLeft + " ساعة و " + minsLeft + " دقيقة";
+                        }
+                    } else {
+                        countdown.innerText = "هتعاد تلقائياً كل 24 ساعة";
+                    }
+
+                    taskText.appendChild(document.createElement("br"));
+                    taskText.appendChild(badge);
+                    taskText.appendChild(countdown);
+                }
+
                 taskText.onclick = function() {
                     tasks[index].completed = !tasks[index].completed;
+                    // لو المهمة متكررة واتعملها complete، نحدّث lastReset
+                    if (tasks[index].repeating && tasks[index].completed) {
+                        tasks[index].lastReset = Date.now();
+                    }
                     saveTasks();
                     displayTasks();
                     updateStats();
@@ -400,7 +585,8 @@
                     }
                 };
 
-                taskDiv.appendChild(taskText);
+                leftSide.appendChild(taskText);
+                taskDiv.appendChild(leftSide);
                 taskDiv.appendChild(deleteBtn);
                 list.appendChild(taskDiv);
             });
@@ -444,6 +630,66 @@
         }
 
         // ==========================================
+        // التنبيهات (Notifications)
+        // ==========================================
+        function toggleNotifications() {
+            if (!("Notification" in window)) {
+                alert("متصفحك مش بيدعم التنبيهات");
+                return;
+            }
+
+            if (Notification.permission === "granted") {
+                notificationsEnabled = !notificationsEnabled;
+                localStorage.setItem("notificationsEnabled", notificationsEnabled);
+                updateNotifButton();
+                if (notificationsEnabled) {
+                    showNotification("🔔 التنبيهات مفعّلة", "هتوصلك تنبيهات للمهام المتكررة");
+                } else {
+                    alert("تم إيقاف التنبيهات");
+                }
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(function(permission) {
+                    if (permission === "granted") {
+                        notificationsEnabled = true;
+                        localStorage.setItem("notificationsEnabled", "true");
+                        updateNotifButton();
+                        showNotification("🔔 التنبيهات مفعّلة", "هتوصلك تنبيهات للمهام المتكررة");
+                    } else {
+                        alert("تم رفض الإذن. تقدر تفعّله من إعدادات المتصفح");
+                    }
+                });
+            } else {
+                alert("تم حظر التنبيهات من إعدادات المتصفح. تقدر تفعّلها من Site Settings");
+            }
+        }
+
+        function updateNotifButton() {
+            let btn = document.getElementById("notifBtn");
+            if (notificationsEnabled) {
+                btn.classList.add("active");
+                btn.innerText = "🔔 التنبيهات ✓";
+            } else {
+                btn.classList.remove("active");
+                btn.innerText = "🔔 التنبيهات";
+            }
+        }
+
+        function showNotification(title, body) {
+            if (!notificationsEnabled) return;
+            if (!("Notification" in window)) return;
+            if (Notification.permission !== "granted") return;
+
+            try {
+                new Notification(title, {
+                    body: body,
+                    icon: "icon.svg"
+                });
+            } catch (e) {
+                console.log("Notification error:", e);
+            }
+        }
+
+        // ==========================================
         // PWA: تثبيت التطبيق (Install Prompt)
         // ==========================================
         let deferredPrompt = null;
@@ -458,9 +704,6 @@
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    console.log('تم التثبيت');
-                }
                 deferredPrompt = null;
                 document.getElementById('installBtn').style.display = 'none';
             } else {
